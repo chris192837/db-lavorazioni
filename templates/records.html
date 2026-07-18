@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1 class="page-title">Lavorazioni</h1>
+<p class="page-subtitle">
+  Elenco delle lavorazioni registrate.
+</p>
+
+<form method="post" id="records-form">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="records-container">
+    <div class="records-toolbar">
+      <button
+        type="submit"
+        formaction="{{ url_for('delete_selected_records') }}"
+        class="btn-bulk-danger"
+        onclick="return confirm('Vuoi davvero eliminare le lavorazioni selezionate?');"
+      >
+        🗑️ Elimina selezionati
+      </button>
+    </div>
+
+    <table class="records-table">
+      <thead>
+        <tr>
+          <th class="col-check"><input type="checkbox" id="select-all"></th>
+          <th class="col-tipo-record">Tipo record</th>
+          <th class="col-tipologia">Tipologia</th>
+          <th class="col-data">Data</th>
+          <th class="col-codice-pratica">Codice pratica</th>
+          <th class="col-coda-lavorazione">Coda lavorazione</th>
+          <th class="col-note">Note</th>
+          <th class="col-azioni">Azioni</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for gruppo in record_by_date %}
+          <tr class="date-group-row">
+            <td colspan="8">
+              {{ gruppo.data }} — {{ gruppo.totale }} {{ 'pratiche' if gruppo.totale != 1 else 'pratica' }} lavorat{{ 'e' if gruppo.totale != 1 else 'a' }}
+            </td>
+          </tr>
+          {% for r in gruppo.records %}
+            <tr>
+              <td><input type="checkbox" name="record_ids" value="{{ r.id }}" class="row-check"></td>
+              <td>{{ r.tipo_record }}</td>
+              <td>{{ r.tipologia }}</td>
+              <td>{{ r.data_lavorazione }}</td>
+              <td>{{ r.codice_pratica }}</td>
+              <td>{{ r.coda_lavorazione }}</td>
+              <td>{{ r.note }}</td>
+              <td>
+                <button
+                  type="submit"
+                  formaction="{{ url_for('delete_record', record_id=r.id) }}"
+                  class="btn-icon-danger"
+                  title="Elimina"
+                  aria-label="Elimina"
+                  onclick="return confirm('Vuoi davvero eliminare questa lavorazione?');"
+                >🗑️</button>
+              </td>
+            </tr>
+          {% endfor %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</form>
+
+<script>
+  const selectAll = document.getElementById('select-all');
+  const rowChecks = document.querySelectorAll('.row-check');
+
+  selectAll.addEventListener('change', () => {
+    rowChecks.forEach(cb => { cb.checked = selectAll.checked; });
+  });
+
+  rowChecks.forEach(cb => {
+    cb.addEventListener('change', () => {
+      selectAll.checked = Array.from(rowChecks).every(c => c.checked);
+    });
+  });
+</script>
+{% endblock %}

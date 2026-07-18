@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1 class="page-title">Report</h1>
+<p class="page-subtitle">
+  Conteggio per tipo di record e tipologia, filtrato per il tuo profilo.
+</p>
+
+<div class="records-container" style="margin-bottom: 24px;">
+  <table class="records-table">
+    <thead>
+      <tr>
+        <th>Tipo record</th>
+        <th>Tipologia</th>
+        <th>Totale</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in summary_by_type %}
+        <tr>
+          <td>{{ row.tipo_record }}</td>
+          <td>{{ row.tipologia }}</td>
+          <td>{{ row.totale }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<h1 class="page-title">Riepilogo per utente</h1>
+<p class="page-subtitle">
+  Documenti, chiamate e totale lavorazioni per ciascun utente.
+</p>
+
+<div class="records-container">
+  <table class="records-table">
+    <thead>
+      <tr>
+        <th style="width: auto;">Utente</th>
+        <th style="width: 90px;">Ruolo</th>
+        <th style="width: 90px;">Documenti</th>
+        <th style="width: 80px;">Chiamate</th>
+        <th style="width: 70px;">Totale</th>
+        <th style="width: 150px;">Azioni</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for u in per_user_stats %}
+        <tr>
+          <td>{{ u.nome }} {{ u.cognome }}</td>
+          <td>
+            <span class="role-pill {% if u.ruolo == 'admin' %}role-pill--admin{% endif %}">{{ u.ruolo }}</span>
+          </td>
+          <td>{{ u.documenti }}</td>
+          <td>{{ u.chiamata }}</td>
+          <td>{{ u.totale }}</td>
+          <td>
+            <form
+              method="post"
+              action="{{ url_for('set_ruolo', user_id=u.id) }}"
+              onsubmit="return confirm('{% if u.id == session.get('user_id') %}Stai per cambiare IL TUO STESSO ruolo. {% endif %}Confermi il cambio di ruolo per questo utente?');"
+            >
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              {% if u.ruolo == 'admin' %}
+                <input type="hidden" name="ruolo" value="lavoratore">
+                <button type="submit" class="btn-role-toggle">Rendi lavoratore</button>
+              {% else %}
+                <input type="hidden" name="ruolo" value="admin">
+                <button type="submit" class="btn-role-toggle">Rendi admin</button>
+              {% endif %}
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

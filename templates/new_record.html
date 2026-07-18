@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1 class="page-title">Nuova lavorazione</h1>
+<p class="page-subtitle">
+  Registra una chiamata o un documento lavorato.
+</p>
+
+<form method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <!-- Tipo record -->
+  <div>
+    <label>Tipo record</label>
+    <select name="tipo_record" id="tipo_record" required>
+      <option value="">Seleziona...</option>
+      <option value="documento">Documento</option>
+      <option value="chiamata">Chiamata</option>
+    </select>
+  </div>
+
+  <!-- Tipologia (dropdown, dipende da tipo_record) -->
+  <div>
+    <label>Tipologia</label>
+    <select name="tipologia" id="tipologia" required>
+      <option value="">Seleziona...</option>
+
+      <!-- Tipologie per DOCUMENTO -->
+      <option data-for="documento" value="cai">CAI</option>
+      <option data-for="documento" value="richiesta danni">Richiesta danni</option>
+      <option data-for="documento" value="metadato">Metadato</option>
+      <option data-for="documento" value="spostato">Spostato</option>
+
+      <!-- Tipologie per CHIAMATA -->
+      <option data-for="chiamata" value="incarico">Incarico</option>
+      <option data-for="chiamata" value="contatto ivr">Contatto IVR</option>
+      <option data-for="chiamata" value="info">Info</option>
+    </select>
+  </div>
+
+  <!-- Data lavorazione: solo per documenti, calendario -->
+  <div id="data-wrapper">
+    <label>Data lavorazione (solo documenti)</label>
+    <input type="date" name="data_lavorazione" id="data_lavorazione">
+  </div>
+
+  <div>
+    <label>Codice pratica</label>
+    <input type="text" name="codice_pratica" placeholder="Es. PRA123456">
+  </div>
+
+  <!-- Coda lavorazione: solo per documenti -->
+  <div id="coda-wrapper">
+    <label>Coda lavorazione (solo documenti)</label>
+    <select name="coda_lavorazione" id="coda_lavorazione">
+      <option value="">Seleziona...</option>
+      <option value="coda cai">Coda CAI</option>
+      <option value="coda scarti">Coda scarti</option>
+      <option value="coda poste">Coda poste</option>
+      <option value="coda be rebel">Coda Be Rebel</option>
+    </select>
+  </div>
+
+  <div>
+    <label>Note</label>
+    <input type="text" name="note" placeholder="Dettagli utili (facoltativo)">
+  </div>
+
+  <button type="submit">Salva lavorazione</button>
+</form>
+
+<script>
+  const tipoSelect = document.getElementById('tipo_record');
+  const tipologiaSelect = document.getElementById('tipologia');
+  const dataWrapper = document.getElementById('data-wrapper');
+  const dataInput = document.getElementById('data_lavorazione');
+  const codaWrapper = document.getElementById('coda-wrapper');
+  const codaSelect = document.getElementById('coda_lavorazione');
+
+  function filterOptions(selectElement, tipo) {
+    Array.from(selectElement.options).forEach(opt => {
+      if (!opt.value) {
+        opt.hidden = false;
+        return;
+      }
+      const target = opt.getAttribute('data-for');
+      opt.hidden = target !== tipo;
+    });
+    selectElement.value = '';
+  }
+
+  function onTipoChange() {
+    const tipo = tipoSelect.value;
+    filterOptions(tipologiaSelect, tipo);
+
+    // calendario e coda lavorazione: solo per documenti
+    if (tipo === 'documento') {
+      dataWrapper.style.display = 'block';
+      dataInput.required = true;
+
+      codaWrapper.style.display = 'block';
+      codaSelect.required = true;
+    } else if (tipo === 'chiamata') {
+      dataWrapper.style.display = 'none';
+      dataInput.required = false;
+      dataInput.value = '';
+
+      codaWrapper.style.display = 'none';
+      codaSelect.required = false;
+      codaSelect.value = '';
+    }
+  }
+
+  tipoSelect.addEventListener('change', onTipoChange);
+
+  // stato iniziale: campi documento-only nascosti fino a scelta "documento"
+  dataWrapper.style.display = 'none';
+  codaWrapper.style.display = 'none';
+</script>
+{% endblock %}

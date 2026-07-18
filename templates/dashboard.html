@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1 class="page-title">Dashboard</h1>
+<p class="page-subtitle">
+  Benvenuto {{ nome }} {{ cognome }}. Riepilogo della tua attività e azioni rapide.
+</p>
+
+{% if stats %}
+  <div class="stat-grid">
+    <div class="stat-card stat-card--blue">
+      <span class="stat-label">Chiamate</span>
+      <span class="stat-value">{{ stats.chiamate }}</span>
+    </div>
+
+    <div class="stat-card stat-card--green">
+      <span class="stat-label">Documenti</span>
+      <span class="stat-value">{{ stats.documenti }}</span>
+    </div>
+
+    <div class="stat-card stat-card--orange">
+      <span class="stat-label">Totale lavorazioni</span>
+      <span class="stat-value">{{ stats.totale }}</span>
+    </div>
+  </div>
+{% endif %}
+
+<div class="quick-actions">
+  <a class="btn-link" href="{{ url_for('new_record') }}">
+    ➕ Inserisci nuova lavorazione
+  </a>
+  <a class="btn-link" href="{{ url_for('records') }}">
+    📄 Vedi tutte le lavorazioni
+  </a>
+  <a class="btn-link" href="{{ url_for('reports') }}">
+    📊 Vai ai report
+  </a>
+</div>
+{% endblock %}

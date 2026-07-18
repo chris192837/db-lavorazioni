@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block body_class %}auth-body{% endblock %}
+{% block navbar %}{% endblock %}
+{% block wrapper_class %}auth-wrapper{% endblock %}
+
+{% block content %}
+<div class="auth-card">
+  <h1 class="page-title">Accedi al sistema</h1>
+  <p class="page-subtitle">
+    Inserisci le tue credenziali per accedere al monitor delle lavorazioni.
+  </p>
+
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div>
+      <label>Email</label>
+      <input type="email" name="email" placeholder="nome.cognome@azienda.it" required>
+    </div>
+
+    <div>
+      <label>Password</label>
+      <input type="password" name="password" placeholder="••••••••" required>
+    </div>
+
+    <button type="submit">Accedi</button>
+  </form>
+
+  <p class="muted">
+    Non hai ancora un account?
+    <a class="link" href="{{ url_for('register') }}">Registrati</a>
+  </p>
+</div>
+{% endblock %}
