@@ -7,7 +7,7 @@ from datetime import datetime
 def get_connection():
     if Config.DATABASE_URL:
         conn = psycopg2.connect(Config.DATABASE_URL)
-                
+
     else:
         conn = psycopg2.connect(
         host=Config.PG_HOST,
@@ -59,6 +59,20 @@ def init_db():
     finally:
         conn.close()
 
+def count_admin_db(admin):
+    query = """
+    SELECT COUNT(*) AS totale FROM users
+    WHERE ruolo = %s;
+    """
+    conn = get_connection()
+    try:
+        with conn.cursor(cursor_factory=DictCursor) as cur:
+            cur.execute(query, (admin,))
+            risultato = cur.fetchone()
+            return risultato["totale"]
+    finally:
+        conn.close()        
+        
 
 def insert_users_db(
     ruolo,    

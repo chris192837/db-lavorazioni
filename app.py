@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 from werkzeug.security import generate_password_hash, check_password_hash
 from config import Config
 from datetime import date, datetime, timedelta
-from db import init_db, insert_users_db, insert_lavorazioni_db, get_connection
+from db import init_db, insert_users_db, insert_lavorazioni_db, get_connection, count_admin_db
 import psycopg2
 from psycopg2.extras import DictCursor
 from flask_wtf import CSRFProtect
@@ -68,7 +68,7 @@ def register():
     error = None
 
     if request.method == "POST":
-        ruolo = "lavoratore"
+        ruolo = "admin" if count_admin_db("admin") == 0 else "lavoratore"
         email = request.form.get("email")
         password = request.form.get("password")
         password_confirm = request.form.get("password_confirm")
@@ -227,7 +227,24 @@ def set_ruolo(user_id):
     if nuovo_ruolo not in ("admin", "lavoratore"):
         flash("Ruolo non valido.", "error")
         return redirect(url_for("reports"))
-    
+
+    conn = get_connection()
+    try:
+        with conn.cursor(cursor_factory=DictCursor) as cur:
+            cur.execute("SELECT ruolo FROM users WHERE id = %s", (user_id,))
+            target = cur.fetchone()
+    finally:
+        conn.close()
+
+    if target is None:
+        flash("Utente non trovato.", "error")
+        return redirect(url_for("reports"))
+
+    declassamento = target["ruolo"] == "admin" and nuovo_ruolo == "lavoratore"
+    if declassamento and count_admin_db("admin") <= 1:
+        flash("Non puoi togliere il ruolo di admin all'ultimo amministratore rimasto.", "error")
+        return redirect(url_for("reports"))
+
     update_ruolo_db(user_id, nuovo_ruolo)
     flash("Ruolo aggiornato con successo.", "success")
 
