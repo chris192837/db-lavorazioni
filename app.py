@@ -22,20 +22,6 @@ LOGIN_ATTEMPS = {}
 MAX_TENTATIVI = 5
 BLOCCO_MINUTI = 15
 
-def delete_lavorazioni_bulk_db(record_ids, user_id):
-    conn = get_connection()
-    try:
-        with conn.cursor() as cur:
-            cur.execute(
-                """
-                DELETE FROM lavorazioni WHERE id = ANY(%s) AND user_id = %s;
-                """,
-                (record_ids, user_id),
-            )
-        conn.commit()
-    finally:
-        conn.close()
-
 
 def delete_lavorazione_db(record_id, user_id):
     conn = get_connection()
@@ -43,7 +29,7 @@ def delete_lavorazione_db(record_id, user_id):
         with conn.cursor() as cur:
             cur.execute(
                 """
-                DELETE FROM lavorazioni WHERE id = %s AND user_id = %s;
+                DELETE FROM lavorazioni WHERE id = ANY(%s) AND user_id = %s;
                 """,
                 (record_id, user_id),
             )
@@ -391,7 +377,7 @@ def delete_record(record_id):
 
     user_id = session["user_id"]
 
-    delete_lavorazione_db(record_id, user_id)
+    delete_lavorazione_db([record_id], user_id)
     flash("Lavorazione eliminata con successo!", "success")
 
     return redirect(url_for("records"))
@@ -406,7 +392,7 @@ def delete_selected_records():
     record_ids = request.form.getlist("record_ids", type=int)
 
     if record_ids:
-        delete_lavorazioni_bulk_db(record_ids, user_id)
+        delete_lavorazione_db(record_ids, user_id)
         flash("Lavorazioni selezionate eliminate con successo!", "success")
     else:
         flash("Nessuna lavorazione selezionata.", "error")
