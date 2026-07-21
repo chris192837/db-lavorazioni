@@ -9,7 +9,7 @@ venv/
 .venv/
 env/
 db/
-obiettivo.txt
+claude.md
 
 # Editor / OS
 .vscode/

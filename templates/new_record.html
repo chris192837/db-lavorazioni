@@ -6,6 +6,10 @@
   Registra una chiamata o un documento lavorato.
 </p>
 
+{% if error %}
+  <div class="flash flash-error">{{ error }}</div>
+{% endif %}
+
 <form method="post">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <!-- Tipo record -->

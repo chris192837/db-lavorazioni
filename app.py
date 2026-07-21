@@ -23,6 +23,13 @@ MAX_TENTATIVI = 5
 BLOCCO_MINUTI = 15
 
 
+@app.errorhandler(psycopg2.Error)
+def handle_db_error(e):
+    print("Errore DB: ", e)
+    flash("si è verificato un problema", "error")
+    return redirect(url_for("login"))
+
+
 def delete_lavorazione_db(record_id, user_id):
     conn = get_connection()
     try:
@@ -73,9 +80,13 @@ def register():
                 existing = cur.fetchone()
         finally:
             conn.close()
-
-        if not EMAIL_REGEX.match(email):
+        
+        if email is None:
+            error = "Non puoi lasciare il campo vuoto."
+        elif not EMAIL_REGEX.match(email):
             error = "Indirizzo email non valido."
+        elif password is None:
+            error = "Non puoi lasciare il campo in bianco."
         elif len(password) < 8:
             error = "La password deve contenere almeno 8 caratteri."
         elif not nome or not cognome:
@@ -102,6 +113,8 @@ def register():
 
                 except psycopg2.errors.UniqueViolation:
                     error = "Questa email è già registrata. Effettua il login oppure un'altra email."
+                except psycopg2.errors.Error:
+                    error = "Compila correttamenti i campi indicati."
                 else:
                     flash("Registrazione effettuata con successo. Puoi effettuare il login.", "success")
                     return redirect(url_for("login"))
@@ -115,7 +128,8 @@ def login():
 
         tentativo = LOGIN_ATTEMPS.get(email)
         if tentativo and tentativo["blocked_until"] and tentativo["blocked_until"] > datetime.utcnow():
-            return "Troppi tentativi falliti. Riprova più tardi.", 429
+            flash("Troppi tentativi falliti. Riprova più tardi.", "error")
+            return render_template("login.html")
         conn = get_connection()
         try:
             with conn.cursor(cursor_factory=DictCursor) as cur:
@@ -131,14 +145,16 @@ def login():
             tentativo["count"] += 1
             if tentativo["count"] >= MAX_TENTATIVI:
                 tentativo["blocked_until"] = datetime.utcnow() + timedelta(minutes=BLOCCO_MINUTI)
-            return "Email o password non corretti", 400
+            flash("Email o password non corretti", "error")
+            return render_template("login.html")
         
         if not check_password_hash(user["password_hash"], password):
             tentativo = LOGIN_ATTEMPS.setdefault(email, {"count": 0, "blocked_until": None})
             tentativo["count"] += 1
             if tentativo["count"] >= MAX_TENTATIVI:
                 tentativo["blocked_until"] = datetime.utcnow() + timedelta(minutes=BLOCCO_MINUTI)
-            return "Email o password non corretti", 400
+            flash("Email o password non corretti", "error")
+            return render_template("login.html")
         
         LOGIN_ATTEMPS.pop(email, None)
 
@@ -232,6 +248,8 @@ def set_ruolo(user_id):
         return redirect(url_for("reports"))
 
     update_ruolo_db(user_id, nuovo_ruolo)
+    if user_id == session["user_id"]:
+        session["ruolo"] = nuovo_ruolo
     flash("Ruolo aggiornato con successo.", "success")
 
     return redirect(url_for("reports"))
@@ -242,6 +260,8 @@ def new_record():
     if "user_id" not in session:
         return redirect(url_for("login"))
     
+    error = None
+
     if request.method == "POST":
         user_id = session["user_id"]
         tipo_record = request.form.get("tipo_record")
@@ -251,26 +271,35 @@ def new_record():
         coda_lavorazione = request.form.get("coda_lavorazione")
         note = request.form.get("note")
 
-        if tipo_record == "documento":
-            data_lavorazione = data_lavorazione_form
+
+        if tipo_record != "documento" and tipo_record != "chiamata":
+            error = "Non puoi visualizzare altre cose."
+        elif tipo_record == "documento" and not data_lavorazione_form:
+            error = "Bisognerà forse inserire una data in primis."
         else:
-            data_lavorazione = date.today().isoformat()
+            if tipo_record == "documento":
+                data_lavorazione = data_lavorazione_form
+            else:
+                data_lavorazione = date.today().isoformat()
 
-        insert_lavorazioni_db(
-            user_id=user_id,
-            tipo_record=tipo_record,
-            tipologia=tipologia,
-            data_lavorazione=data_lavorazione,
-            codice_pratica=codice_pratica,
-            coda_lavorazione=coda_lavorazione,
-            note=note,
-        )
-
-        flash("Lavorazione salvata con successo.", "success")
-        
-        return redirect(url_for("dashboard"))
-    
-    return render_template("new_record.html")
+        if error is None:
+            try:
+                insert_lavorazioni_db(
+                    user_id=user_id,
+                    tipo_record=tipo_record,
+                    tipologia=tipologia,
+                    data_lavorazione=data_lavorazione,
+                    codice_pratica=codice_pratica,
+                    coda_lavorazione=coda_lavorazione,
+                    note=note,
+                    )
+            except psycopg2.errors.Error:
+                error = "Errore durante il salvataggio della lavorazione.."
+            else:
+                flash("Lavorazione salvata con successo.", "success")
+                return redirect(url_for("dashboard"))
+            
+    return render_template("new_record.html", error=error)
 
 
 @app.route("/records")
