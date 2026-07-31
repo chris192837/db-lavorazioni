@@ -187,7 +187,6 @@ def dashboard():
         return redirect(url_for("login"))
 
     user_id = session["user_id"]
-    email = session.get("email")
     nome = session.get("nome")
     cognome = session.get("cognome")
     today = date.today().isoformat()
@@ -206,7 +205,7 @@ def dashboard():
                 FROM users u
                 LEFT JOIN lavorazioni l ON l.user_id = u.id AND l.data_lavorazione = %s
                 WHERE u.id = %s
-                GROUP BY u.id, u.email;
+                GROUP BY u.id;
                 """,
                 (today, user_id,),
             )
